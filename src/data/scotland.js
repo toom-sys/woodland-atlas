@@ -3,7 +3,6 @@
  * National Land LiDAR Programme 1 km DTM/DSM tiles (OGL). CORS allows browser Range reads.
  * Canopy height = DSM − DTM (no VOM equivalent). Verified 2026-07-22 — see docs/endpoints.md.
  */
-import { fromUrl } from '../../vendor/geotiff/geotiff.js';
 import {
   wgs84ToBng,
   samplePointsInPolygon,
@@ -12,6 +11,13 @@ import {
   withTimeout
 } from './geo.js';
 import { bngToOs1km } from './nation.js';
+
+/** Browser UMD loaded from index.html — no bare npm imports (static Pages deploy). */
+function fromUrl(...args) {
+  const api = globalThis.GeoTIFF;
+  if (!api?.fromUrl) throw new Error('GeoTIFF unavailable');
+  return api.fromUrl(...args);
+}
 
 const S3 = 'https://srsp-open-data.s3.eu-west-2.amazonaws.com';
 const FETCH_MS = 12000;
