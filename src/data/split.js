@@ -80,6 +80,59 @@ function bboxSpan(geom) {
 }
 
 /**
+ * Split a feature with a closed ring (≥3 positions).
+ * Inside the ring ∩ parcel vs remainder.
+ * @returns {{ pieces: object[], error?: string }}
+ */
+export function splitFeatureByRing(feature, ringCoords) {
+  if (!feature?.geometry) return { pieces: [], error: 'No parcel geometry' };
+  if (!ringCoords || ringCoords.length < 3) {
+    return { pieces: [], error: 'Draw at least three points around the part to keep' };
+  }
+
+  const ring = ringCoords.map((c) => [c[0], c[1]]);
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  if (first[0] !== last[0] || first[1] !== last[1]) {
+    ring.push([first[0], first[1]]);
+  }
+  if (ring.length < 4) {
+    return { pieces: [], error: 'Shape is too small — add more points' };
+  }
+
+  try {
+    const api = pcApi();
+    const parentPc = geomToPc(feature.geometry);
+    if (!parentPc) return { pieces: [], error: 'Unsupported geometry' };
+    const shapePc = [[ring]];
+    const partIn = api.intersection(parentPc, shapePc);
+    const partOut = api.difference(parentPc, shapePc);
+    const gIn = pcToGeom(partIn);
+    const gOut = pcToGeom(partOut);
+    if (!gIn || !gOut) {
+      return {
+        pieces: [],
+        error: 'Shape must overlap the highlighted parcel and leave some outside'
+      };
+    }
+    return finalizePieces(feature, [gIn, gOut]);
+  } catch (err) {
+    return { pieces: [], error: err?.message || 'Split failed' };
+  }
+}
+
+/**
+ * Split with a cut line (≥2 points) or a closed shape (≥3 points).
+ */
+export function splitFeature(feature, points) {
+  if (!points || points.length < 2) {
+    return { pieces: [], error: 'Draw a cut (2 points) or a shape (3+ points)' };
+  }
+  if (points.length >= 3) return splitFeatureByRing(feature, points);
+  return splitFeatureByLine(feature, points);
+}
+
+/**
  * Split a feature with an open cut line (≥2 positions [lon,lat]).
  * Uses the first→last segment as the cut (half-plane).
  * @returns {{ pieces: object[], error?: string }}
@@ -96,15 +149,13 @@ export function splitFeatureByLine(feature, lineCoords) {
     return { pieces: [], error: 'Cut line is too short' };
   }
 
-  let parentPc;
-  let leftPc;
   try {
     const api = pcApi();
-    parentPc = geomToPc(feature.geometry);
+    const parentPc = geomToPc(feature.geometry);
     if (!parentPc) return { pieces: [], error: 'Unsupported geometry' };
     const pad = bboxSpan(feature.geometry) * 4 + 0.05;
     const left = leftHalfPlanePolygon(a, b, pad);
-    leftPc = geomToPc(left);
+    const leftPc = geomToPc(left);
     const partL = api.intersection(parentPc, leftPc);
     const partR = api.difference(parentPc, leftPc);
     const gL = pcToGeom(partL);
@@ -112,25 +163,27 @@ export function splitFeatureByLine(feature, lineCoords) {
     if (!gL || !gR) {
       return { pieces: [], error: 'Cut must cross the parcel so both sides have area' };
     }
-
-    const parentId = feature.properties?.__id || 'parcel';
-    const stamp = Date.now().toString(36);
-    const pieces = [gL, gR].map((geom, i) =>
-      buildSplitFeature(feature, geom, `${parentId}·${i === 0 ? 'a' : 'b'}·${stamp}`)
-    );
-
-    for (const p of pieces) {
-      if ((p.properties.__ha || 0) < MIN_PIECE_HA) {
-        return {
-          pieces: [],
-          error: `Each piece must be at least ${MIN_PIECE_HA} ha — adjust the cut`
-        };
-      }
-    }
-    return { pieces };
+    return finalizePieces(feature, [gL, gR]);
   } catch (err) {
     return { pieces: [], error: err?.message || 'Split failed' };
   }
+}
+
+function finalizePieces(feature, geoms) {
+  const parentId = feature.properties?.__id || 'parcel';
+  const stamp = Date.now().toString(36);
+  const pieces = geoms.map((geom, i) =>
+    buildSplitFeature(feature, geom, `${parentId}·${i === 0 ? 'a' : 'b'}·${stamp}`)
+  );
+  for (const p of pieces) {
+    if ((p.properties.__ha || 0) < MIN_PIECE_HA) {
+      return {
+        pieces: [],
+        error: `Each piece must be at least ${MIN_PIECE_HA} ha — adjust the drawing`
+      };
+    }
+  }
+  return { pieces };
 }
 
 function buildSplitFeature(parent, geometry, id) {

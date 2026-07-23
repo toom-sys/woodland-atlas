@@ -33,7 +33,7 @@ import {
   lossForStep
 } from './scoring/lossScenario.js';
 import { setPill, toast } from './ui/pills.js';
-import { splitFeatureByLine, selectionForSplitPiece } from './data/split.js';
+import { splitFeature, selectionForSplitPiece } from './data/split.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -329,6 +329,37 @@ function buildStyle() {
         }
       },
       {
+        id: 'split-target-fill',
+        type: 'fill',
+        source: 'split-draft',
+        filter: ['==', ['get', 'kind'], 'target'],
+        paint: {
+          'fill-color': '#F2B63C',
+          'fill-opacity': 0.18
+        }
+      },
+      {
+        id: 'split-target-line',
+        type: 'line',
+        source: 'split-draft',
+        filter: ['==', ['get', 'kind'], 'target'],
+        paint: {
+          'line-color': '#F8C65C',
+          'line-width': 2.8,
+          'line-opacity': 1
+        }
+      },
+      {
+        id: 'split-lasso-fill',
+        type: 'fill',
+        source: 'split-draft',
+        filter: ['==', ['get', 'kind'], 'lasso'],
+        paint: {
+          'fill-color': '#F2B63C',
+          'fill-opacity': 0.22
+        }
+      },
+      {
         id: 'split-draft-point',
         type: 'circle',
         source: 'split-draft',
@@ -368,16 +399,66 @@ function syncPickCursor() {
 function splitHint() {
   const n = state.splitDraw?.points?.length || 0;
   if (n < 2) {
-    return 'Split mode — click two points across the parcel to draw the cut, then Finish (or press Enter). Esc cancels.';
+    return 'Split the amber parcel — click two points for a cut, or three+ around the part to keep. Finish / Enter when ready. Esc cancels.';
   }
-  return 'Split mode — click Finish or press Enter to cut. Esc cancels. Add more points to refine the cut line.';
+  if (n === 2) {
+    return 'Cut ready — Finish for a line split, or keep clicking to draw a shape around the part to keep.';
+  }
+  return 'Shape ready — Finish to keep the area inside your drawing and split off the rest. Click near the first point to close.';
+}
+
+function geomBbox(geom) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  const rings =
+    geom?.type === 'Polygon'
+      ? geom.coordinates
+      : geom?.type === 'MultiPolygon'
+        ? geom.coordinates.flat()
+        : [];
+  for (const ring of rings) {
+    for (const [x, y] of ring) {
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (!Number.isFinite(minX)) return null;
+  return [
+    [minX, minY],
+    [maxX, maxY]
+  ];
 }
 
 function updateSplitDraft() {
   if (!map?.getSource('split-draft')) return;
-  const pts = state.splitDraw?.points || [];
+  const draw = state.splitDraw;
+  const pts = draw?.points || [];
   const features = [];
-  if (pts.length >= 2) {
+  const target = draw?.targetId ? state.features.get(draw.targetId) : null;
+  if (target?.geometry) {
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'target' },
+      geometry: target.geometry
+    });
+  }
+  if (pts.length >= 3) {
+    const ring = [...pts, pts[0]];
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'lasso' },
+      geometry: { type: 'Polygon', coordinates: [ring] }
+    });
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'line' },
+      geometry: { type: 'LineString', coordinates: ring }
+    });
+  } else if (pts.length >= 2) {
     features.push({
       type: 'Feature',
       properties: { kind: 'line' },
@@ -406,8 +487,10 @@ function setSplitButton() {
   }
   btn.classList.add('active');
   btn.setAttribute('aria-pressed', 'true');
-  btn.textContent =
-    (draw.points?.length || 0) >= 2 ? '✂ FINISH CUT' : '✂ SPLIT · DRAWING';
+  const n = draw.points?.length || 0;
+  if (n >= 3) btn.textContent = '✂ FINISH SHAPE';
+  else if (n >= 2) btn.textContent = '✂ FINISH CUT';
+  else btn.textContent = '✂ SPLIT · DRAWING';
 }
 
 function cancelSplitMode({ silent = false } = {}) {
@@ -464,6 +547,18 @@ export function beginSplitMode(targetId) {
   }
 
   cancelSplitMode({ silent: true });
+  // Keep only this parcel selected so the amber highlight matches the split target.
+  for (const sid of [...state.selected.keys()]) {
+    if (sid !== id) {
+      state.selected.delete(sid);
+      setFeatureSelected(sid, false);
+    }
+  }
+  if (!state.selected.has(id)) {
+    state.selected.set(id, selectionAgeState(feature));
+  }
+  setFeatureSelected(id, true);
+
   state.splitDraw = {
     active: true,
     targetId: id,
@@ -472,10 +567,20 @@ export function beginSplitMode(targetId) {
       ? { pitch: map.getPitch(), bearing: map.getBearing() }
       : { pitch: 55, bearing: -18 }
   };
-  // Flat view makes the cut easier to place.
+  // Flat view + frame the highlighted parcel.
   if (map) {
     map.doubleClickZoom.disable();
-    if (map.getPitch() > 2) {
+    const bounds = geomBbox(feature.geometry);
+    if (bounds) {
+      const opts = {
+        padding: 72,
+        maxZoom: 15,
+        pitch: 0,
+        bearing: 0,
+        duration: prefersReducedMotion() ? 0 : 700
+      };
+      map.fitBounds(bounds, opts);
+    } else if (map.getPitch() > 2) {
       cameraTo({ pitch: 0, bearing: 0, duration: 500 }, 'ease');
     }
   }
@@ -484,14 +589,15 @@ export function beginSplitMode(targetId) {
   syncPickCursor();
   const hint = $('hint');
   if (hint) hint.textContent = splitHint();
-  toast('Draw a cut line across the parcel');
+  toast('Draw on the amber parcel — cut line or shape around the part to keep');
+  notify();
 }
 
 function finishSplitCut() {
   const draw = state.splitDraw;
   if (!draw?.active) return;
   if ((draw.points?.length || 0) < 2) {
-    toast('Add at least two points for the cut');
+    toast('Add at least two points for a cut, or three for a shape');
     return;
   }
   const parent = state.features.get(draw.targetId);
@@ -500,7 +606,7 @@ function finishSplitCut() {
     toast('Parcel no longer available');
     return;
   }
-  const { pieces, error } = splitFeatureByLine(parent, draw.points);
+  const { pieces, error } = splitFeature(parent, draw.points);
   if (error || pieces.length !== 2) {
     toast(error || 'Could not split parcel');
     return;
@@ -554,7 +660,17 @@ function finishSplitCut() {
 function onSplitMapClick(e) {
   if (!state.splitDraw?.active) return;
   const { lng, lat } = e.lngLat;
-  state.splitDraw.points.push([lng, lat]);
+  const pts = state.splitDraw.points;
+  // Click near the first point closes a shape (≥3 vertices).
+  if (pts.length >= 3) {
+    const [x0, y0] = pts[0];
+    const closeDeg = Math.max(map.getBounds().getEast() - map.getBounds().getWest(), 0.002) * 0.02;
+    if (Math.hypot(lng - x0, lat - y0) <= closeDeg) {
+      finishSplitCut();
+      return;
+    }
+  }
+  pts.push([lng, lat]);
   updateSplitDraft();
   setSplitButton();
   const hint = $('hint');
