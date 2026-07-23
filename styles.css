@@ -129,8 +129,9 @@ body{
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start;
-  max-width: min(420px, calc(100vw - var(--panel-w) - 48px));
+  align-items: stretch;
+  width: 168px;
+  max-width: min(168px, calc(100vw - var(--panel-w) - 48px));
   pointer-events: none;
 }
 .map-chrome-bl > *{pointer-events: auto}
@@ -140,12 +141,13 @@ body{
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 .controls button{
   font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;
   background:rgba(17,21,14,.92);color:var(--paper);
   border:1px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer;
-  text-align:left;min-width:168px;
+  text-align:left;width:100%;min-width:0;box-sizing:border-box;
 }
 .controls button:hover,.controls button:focus-visible{border-color:var(--amber-dim);color:var(--amber);outline:none}
 .controls button.active{color:var(--amber);border-color:var(--amber-dim)}
@@ -153,10 +155,12 @@ body{
 .legend{
   position: static;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  align-items: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 5px;
+  align-items: flex-start;
   width: 100%;
+  box-sizing: border-box;
   background: rgba(17,21,14,.92);
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -581,8 +585,9 @@ details.loss-play[open] summary .glyph{transform:rotate(90deg)}
     right: max(10px, env(safe-area-inset-right));
     top: max(10px, env(safe-area-inset-top));
     bottom: auto;
+    width: auto;
     max-width: none;
-    align-items: flex-end;
+    align-items: stretch;
   }
   .controls{gap:5px}
   .controls button{
