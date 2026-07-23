@@ -80,7 +80,7 @@
   <div class="panel-body" id="panel-body">
     <details class="client-link" id="client-link">
       <summary>
-        <span class="glyph">▸</span>Link to client
+        <span class="glyph">▸</span>Group woodlands
         <span class="client-link-sum" id="client-link-sum" hidden></span>
         <span class="client-link-tag" id="client-link-tag"></span>
       </summary>
@@ -102,9 +102,16 @@
           <button type="button" id="btn-client-guide">Show guide</button>
           <button type="button" id="btn-client-touch" class="primary">Select woods that touch</button>
         </div>
-        <button type="button" id="btn-client-clear" class="client-link-clear">Clear link</button>
+        <button type="button" id="btn-client-clear" class="client-link-clear">Clear group</button>
       </div>
     </details>
+    <div class="empty" id="empty-state">
+      <b>Nothing selected yet.</b><br>
+      Zoom in until parcels appear, then click one.<br>
+      Use <b>Fly to Dalby Forest</b> to open a well-known Yorkshire woodland.
+    </div>
+    <div id="totals-slot"></div>
+    <div id="parcels-slot"></div>
     <details class="loss-play" id="loss-play">
       <summary><span class="glyph">▸</span>Show a loss <span class="loss-play-tag" id="loss-play-tag"></span></summary>
       <div class="loss-play-body">
@@ -129,13 +136,6 @@
       </div>
     </details>
     <div id="loss-slot"></div>
-    <div class="empty" id="empty-state">
-      <b>Nothing selected yet.</b><br>
-      Zoom in until parcels appear, then click one.<br>
-      Use <b>Fly to Dalby Forest</b> to open a well-known Yorkshire woodland.
-    </div>
-    <div id="totals-slot"></div>
-    <div id="parcels-slot"></div>
     <details class="assume" id="assume">
       <summary><span class="glyph">▸</span>Model assumptions <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--moss)">EDITABLE</span></summary>
       <div class="assume-body">

@@ -747,7 +747,7 @@ function bindClientLink() {
     refInp.value = '';
     w3wInp.value = '';
     areaInp.value = state.clientLink.areaHa;
-    toast('Client link cleared');
+    toast('Group cleared');
   };
 }
 
