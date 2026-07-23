@@ -44,6 +44,47 @@ function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+/** Ensure Esri imagery source/layer exist and match `state.satellite`. */
+function applySatelliteBasemap() {
+  if (!map) return;
+  if (state.satellite && !map.getSource('sat')) {
+    map.addSource('sat', {
+      type: 'raster',
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256,
+      attribution: 'Imagery © Esri'
+    });
+    map.addLayer(
+      {
+        id: 'base-sat',
+        type: 'raster',
+        source: 'sat',
+        paint: { 'raster-opacity': 0.85 }
+      },
+      'nfi-fill'
+    );
+  }
+  if (map.getLayer('base-sat')) {
+    map.setLayoutProperty('base-sat', 'visibility', state.satellite ? 'visible' : 'none');
+  }
+  if (map.getLayer('base-dark')) {
+    map.setLayoutProperty('base-dark', 'visibility', state.satellite ? 'none' : 'visible');
+  }
+  const btn = $('btn-sat');
+  if (btn) {
+    btn.textContent = state.satellite ? '▦ SATELLITE · ON' : '▦ SATELLITE · OFF';
+    btn.classList.toggle('active', state.satellite);
+    btn.setAttribute('aria-pressed', String(state.satellite));
+  }
+  setPill(
+    'pill-base',
+    'ok',
+    state.satellite ? 'BASEMAP · SATELLITE' : 'BASEMAP · CARTO DARK'
+  );
+}
+
 /** MapLibre camera move — instant when the user prefers reduced motion. */
 function cameraTo(opts, mode = 'fly') {
   if (!map) return;
@@ -850,7 +891,7 @@ export function initMap() {
   });
 
   map.on('load', async () => {
-    setPill('pill-base', 'ok', 'BASEMAP · CARTO DARK');
+    applySatelliteBasemap();
     applyColorMode();
     await nfiReady;
     if (state.live) {
@@ -945,32 +986,7 @@ export function bindMapControls() {
 
   $('btn-sat').onclick = () => {
     state.satellite = !state.satellite;
-    if (state.satellite && !map.getSource('sat')) {
-      map.addSource('sat', {
-        type: 'raster',
-        tiles: [
-          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-        ],
-        tileSize: 256,
-        attribution: 'Imagery © Esri'
-      });
-      map.addLayer(
-        {
-          id: 'base-sat',
-          type: 'raster',
-          source: 'sat',
-          paint: { 'raster-opacity': 0.85 }
-        },
-        'nfi-fill'
-      );
-    }
-    if (map.getLayer('base-sat')) {
-      map.setLayoutProperty('base-sat', 'visibility', state.satellite ? 'visible' : 'none');
-    }
-    map.setLayoutProperty('base-dark', 'visibility', state.satellite ? 'none' : 'visible');
-    $('btn-sat').textContent = state.satellite ? '▦ SATELLITE · ON' : '▦ SATELLITE · OFF';
-    $('btn-sat').classList.toggle('active', state.satellite);
-    $('btn-sat').setAttribute('aria-pressed', state.satellite);
+    applySatelliteBasemap();
   };
 
   $('btn-demo').onclick = () =>

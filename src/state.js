@@ -1,7 +1,8 @@
 /** Shared app state + pub/sub render trigger. In-memory only — no persistence. */
 
 /** North York Moors overview — real NFI woodland nearby. */
-export const START = { center: [-0.75, 54.27], zoom: 10.2 };
+/** Initial camera — Dalby Forest (North Yorkshire). */
+export const START = { center: [-0.677, 54.283], zoom: 12.8 };
 /**
  * Dalby Forest (North Yorkshire) — well-known FC woodland for the fly-to control.
  * Offline demo parcels are also centred here when NFI is unreachable.
@@ -206,7 +207,7 @@ export const state = {
   selected: new Map(),
   live: false,
   layerUrl: null,
-  satellite: false,
+  satellite: true,
   tilted: true,
   /** 'coverage' | 'type' | 'off' — off hides NFI woodland layers */
   colorMode: 'coverage',
