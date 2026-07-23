@@ -5,7 +5,7 @@
  */
 
 import { withTimeout } from './geo.js';
-import { parseLatLon, parseW3w } from './clientLink.js';
+import { parseLatLon } from './clientLink.js';
 
 const FETCH_MS = 8000;
 const GB_BBOX = [-8.5, 49.5, 2.0, 61.2]; // west, south, east, north
@@ -146,7 +146,7 @@ export async function searchPlaces(query) {
   }
 }
 
-/** Direct hit for pasted coordinates or w3w words (words need resolve elsewhere). */
+/** Direct hit for pasted coordinates. */
 export function parseDirectLocation(query) {
   const q = String(query || '').trim();
   const coords = parseLatLon(q);
@@ -160,20 +160,6 @@ export function parseDirectLocation(query) {
       center: coords,
       zoom: 12.2,
       source: 'coords'
-    };
-  }
-  const words = parseW3w(q);
-  if (words) {
-    return {
-      id: `w3w-${words}`,
-      kind: 'w3w',
-      kindLabel: 'w3w',
-      label: `///${words}`,
-      name: words,
-      w3w: words,
-      center: null,
-      zoom: 12.2,
-      source: 'w3w'
     };
   }
   return null;

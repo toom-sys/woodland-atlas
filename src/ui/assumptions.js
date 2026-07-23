@@ -70,7 +70,6 @@ export function buildAssumeUI() {
 
   buildWindthrowUI();
   buildFireUI();
-  buildW3wKeyUI();
   buildLossUI();
 }
 
@@ -117,38 +116,6 @@ function buildLossUI() {
     grid.appendChild(d);
   }
   root.appendChild(grid);
-}
-
-/** Optional what3words API key — session only, never exported (SPEC §6.1). */
-function buildW3wKeyUI() {
-  const fireRoot = $('fire-assume');
-  if (!fireRoot?.parentElement) return;
-  const root = fireRoot.parentElement;
-
-  const h = document.createElement('h4');
-  h.textContent = 'CLIENT LINK · WHAT3WORDS';
-  root.appendChild(h);
-
-  const block = document.createElement('div');
-  block.className = 'assume-block';
-  block.innerHTML = `<label>API key (session only)</label>`;
-  const inp = document.createElement('input');
-  inp.type = 'password';
-  inp.autocomplete = 'off';
-  inp.spellcheck = false;
-  inp.placeholder = 'Optional — or paste lat, lon in the link panel';
-  inp.value = state.w3wApiKey || '';
-  inp.setAttribute('aria-label', 'what3words API key');
-  inp.oninput = () => {
-    state.w3wApiKey = inp.value;
-  };
-  block.appendChild(inp);
-  const note = document.createElement('p');
-  note.className = 'assume-note';
-  note.textContent =
-    'Used only to convert a what3words address to coordinates for the guide circle. Not saved, not exported. Without a key, paste lat, lon from Recorder instead.';
-  block.appendChild(note);
-  root.appendChild(block);
 }
 
 function buildWindthrowUI() {

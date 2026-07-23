@@ -4,7 +4,7 @@
 
 **Product in one line:** a static website that draws GB woodland from open public data on a stylised 2.5D map, lets the user click-select parcels into a basket, and prices the selection (timber + land + indicative carbon) with a transparent, editable model — extended in v2 with per-parcel windthrow and fire risk scores.
 
-**Non-negotiable context:** internal briefing tool; no Recorder client directory or PII in the browser; optional opaque typed client refs for handoff only; everything labelled *indicative*; must degrade gracefully on locked-down corporate networks (the demo must never die because an endpoint is blocked).
+**Non-negotiable context:** internal briefing tool; no client directory or PII in the browser; optional opaque typed group refs for handoff only; everything labelled *indicative*; must degrade gracefully on locked-down corporate networks (the demo must never die because an endpoint is blocked).
 
 ---
 
@@ -22,7 +22,7 @@ woodland-atlas/
 │   ├── map.js             # MapLibre init, style, layers, interaction
 │   ├── data/
 │   │   ├── nfi.js         # NFI discovery + viewport fetch + normalisation
-│   │   ├── clientLink.js  # opaque client ref + w3w/radius guide + touch-select
+│   │   ├── clientLink.js  # opaque group ref + lat/lon/radius guide + touch-select
 │   │   ├── geocode.js     # GB place search (Open-Meteo → Photon fallback)
 │   │   ├── lidar.js       # EA Vegetation Object Model (canopy height) sampler
 │   │   ├── terrain.js     # EA DTM sampler → elevation, slope, aspect, exposure
@@ -47,7 +47,7 @@ woodland-atlas/
 
 1. **Fail soft, always.** Every external fetch has a timeout (8–10s), a `catch`, and a defined fallback. A blocked endpoint downgrades a feature and updates its status pill; it never throws to the user or blanks the map.
 2. **Status pills are honest.** Each data source has a pill: `LIVE` (green), `OFFLINE — FALLBACK` (amber), or `UNAVAILABLE` (grey). The pills are part of the product — the tool exists partly to show off which open data is reachable.
-3. **No Recorder payloads.** Do not fetch client directories, names, or book SIs. A session-only opaque **client ref** (typed by the user) plus an optional w3w/radius guide is allowed — see §6.1. Public woodland data + user clicks remain the source of truth for geometry.
+3. **No client directory or PII.** Do not fetch private client directories, names, or book SIs. A session-only opaque **group ref** (typed by the user) plus an optional lat/lon/radius guide is allowed — see §6.1. Public woodland data + user clicks remain the source of truth for geometry.
 4. **Indicative labelling.** Footer carries: model is indicative; heights/scores are estimated from open data, not surveyed; internal briefing only.
 5. **All model numbers are editable** in the assumptions drawer and exported alongside results. No hidden constants in scoring or valuation.
 6. **Verify endpoints at build time.** Service names and layer IDs on public ArcGIS servers go stale. Never hardcode a full service name without a discovery or fallback path (see the NFI pattern in §3.1 — this exact failure has already happened once).
@@ -206,23 +206,23 @@ v2 addition: when `canopyHeightM` exists, show a passive hint on the card if mea
 
 MapLibre GL (cdnjs, pin a known version). Style layers: dark background → CARTO `dark_nolabels` raster (opacity ~0.55, desaturated) → Esri World Imagery raster (hidden until satellite toggle) → NFI `fill-extrusion` → NFI outline. Extrusion height = `baseHeight(type) × 6` exaggeration (v2: `canopyHeightM × 6` when sampled); selected parcels: amber, height ×1.35, via `feature-state` with `promoteId:'__id'`. Pitch 55° / bearing −18° default, tilt toggle to flat. Swallow tile errors (`map.on('error', …)`) so blocked basemaps degrade to the dark canvas with parcels still rendered. Start view North York Moors; "fly to Dalby Forest" button. Colour control cycles **public data → forest type → off** (off hides NFI woodland layers so the basemap / satellite / client guide stand alone).
 
-### 6.1 Client link + w3w guide (handoff aid)
+### 6.1 Group woodlands guide (handoff aid)
 
-Recorder often stores only a **what3words** centre plus a coarse area — useful for finding the place, not for drawing the wood. Atlas keeps accurate NFI parcel selection and optionally attaches a handoff link:
+Atlas keeps accurate NFI parcel selection and optionally attaches a coarse area guide for briefing handoff:
 
-- **Client ref** — free-text opaque id typed by the user (policy / Recorder id). Session-only; never fetched from Recorder; no names or book SIs.
-- **Location** — what3words (`word.word.word`) resolved via the optional session API key in assumptions, **or** paste `lat, lon` when the key is absent/blocked (fail soft). When **Colour · off** (woodlands hidden), click the map to set the centre as `lat, lon` in the client-link field and draw the guide (no fly — the click is the pick).
+- **Group ref** — free-text opaque id typed by the user (briefing / policy id). Session-only; never fetched from a client directory; no names or book SIs.
+- **Location** — paste `lat, lon`, or when **Colour · off** (woodlands hidden) click the map to set the centre and draw the guide (no fly — the click is the pick).
 - **Area (ha)** — editable guide size in whole hectares (default 80). Converted to a circle radius via `r = √(ha × 10 000 / π)` for the amber guide and touch-select. Drawn as that circle + centre on the map.
 - **Select woods that touch** — after fitting the map to the guide and loading the viewport, add every loaded parcel whose geometry intersects the circle to the selection (and run enrichment as for a click).
-- **Export** — JSON includes `clientLink: { ref, w3w, center, areaHa, radiusM }` (`radiusM` derived; never the API key). CSV gains a `client_ref` column on each row when a ref is set.
+- **Export** — JSON includes `clientLink: { ref, center, areaHa, radiusM }` (`radiusM` derived). CSV gains a `client_ref` column on each row when a ref is set.
 
 ### 6.2 Place / client search
 
 Masthead search bar (sentence-case placeholder). Queries:
 
 - **Places** — GB cities, towns, villages, regions via Open-Meteo geocoding with Photon fallback (timeout + catch; toast if both fail). Selecting a hit flies the map; place bounding boxes fit when available.
-- **Clients** — session-only: matches opaque refs already linked this session (and the current link) that have a saved centre; restores the guide and flies to it. No Recorder directory.
-- **Direct** — pasted `lat, lon` or what3words (w3w uses the same resolve path as §6.1).
+- **Groups** — session-only: matches opaque refs already grouped this session (and the current guide) that have a saved centre; restores the guide and flies to it. No external client directory.
+- **Direct** — pasted `lat, lon`.
 
 Keyboard: ↑/↓, Enter, Escape. Fail soft — a blocked geocoder never blanks the map.
 
@@ -269,7 +269,7 @@ Never remove the graceful-degradation paths or status pills.
 Never hardcode an ArcGIS service name without the discovery fallback pattern (SPEC §3.1).
 All scoring/valuation constants live in the assumptions state and are user-editable; no magic numbers in scoring functions.
 Preserve the design tokens in SPEC §2 exactly; amber = selection/emphasis only; red only for HIGH risk bands.
-No Recorder client directory/names/book SIs; opaque typed client refs + w3w guide only (SPEC §6.1). No analytics; no persistence beyond in-memory state.
+No client directory or PII; opaque typed group refs + lat/lon guide only (SPEC §6.1). No analytics; no persistence beyond in-memory state.
 Every external fetch: timeout, catch, defined fallback, pill update.
 UI copy: sentence case, plain verbs; mono uppercase only for micro-labels.
 ```
@@ -278,4 +278,4 @@ UI copy: sentence case, plain verbs; mono uppercase only for micro-labels.
 
 ## 10. Known limitations to carry honestly (footer / docs)
 
-Heights and terrain are sampled estimates from open LiDAR, not survey; the exposure metric is a topex proxy, not DAMS; the windthrow model is ForestGALES-*inspired*, not ForestGALES; FSI may be manual; ignition proximity is assumed in v2; NFI parcels don't follow ownership so selections approximate insured woods; Recorder what3words + radius is a coarse find-aid only — it is not the wood boundary; LiDAR coverage is England-only (Scotland partial, Wales browser-blocked). All of these are Stage 2 pipeline upgrades — the browser tool's job is to prove the joins are possible and show what the open data already supports.
+Heights and terrain are sampled estimates from open LiDAR, not survey; the exposure metric is a topex proxy, not DAMS; the windthrow model is ForestGALES-*inspired*, not ForestGALES; FSI may be manual; ignition proximity is assumed in v2; NFI parcels don't follow ownership so selections approximate insured woods; the lat/lon + radius guide is a coarse find-aid only — it is not the wood boundary; LiDAR coverage is England-only (Scotland partial, Wales browser-blocked). All of these are Stage 2 pipeline upgrades — the browser tool's job is to prove the joins are possible and show what the open data already supports.

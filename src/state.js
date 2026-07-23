@@ -214,22 +214,18 @@ export const state = {
   /** When true, extrusions recolour by windthrow band (selection stays amber). */
   riskView: false,
   /**
-   * Session-only client link (opaque typed ref + optional w3w/area guide).
-   * User edits area in hectares; circle radius is derived for the map.
-   * No Recorder fetch; never persisted. See SPEC §6.1.
+   * Session-only woodland group (opaque typed ref + optional lat/lon/area guide).
+   * No client directory fetch; never persisted. See SPEC §6.1.
    */
   clientLink: {
     ref: '',
-    w3w: '',
     center: null,
     areaHa: DEFAULT_CLIENT_AREA_HA,
     status: 'idle'
   },
-  /** Optional what3words API key — session only, never exported. */
-  w3wApiKey: '6UKJVW33',
   /**
-   * Session history of linked clients (opaque ref + last known centre).
-   * Searchable; never persisted; no Recorder directory.
+   * Session history of grouped refs (opaque ref + last known centre).
+   * Searchable; never persisted; no external client directory.
    */
   clientHistory: [],
   /** Active indicative loss play — in-memory only. */

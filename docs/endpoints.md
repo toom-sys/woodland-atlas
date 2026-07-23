@@ -15,7 +15,6 @@ Re-run the snippets below whenever a service starts failing. Dated service names
 | **EA VOM** (canopy height) | LIVE via **WCS** | Defra DSP WCS 2.0.1 (ImageServer retired) | `NO LIDAR` / `LIDAR · UNAVAILABLE` |
 | **EA DTM** (terrain) | LIVE via **WCS** | Defra DSP WCS 2.0.1 (ImageServer retired) | terrain fields `null`, score components flagged |
 | **FSI** (Met Office → NE) | LIVE | Natural England `OASYS_FSI_PRD_VIEW` FeatureServer | `FSI · MANUAL` (assumptions dropdown, default 2) |
-| **what3words** (optional) | OPTIONAL | `api.what3words.com/v3/convert-to-coordinates` with session key | paste `lat, lon` instead |
 | **Place search** | OPTIONAL | Open-Meteo geocoding → Photon fallback | toast; map unchanged |
 
 ---
@@ -332,17 +331,6 @@ const FSI_LAYER =
 | WCS on GeoServer | Noise maps only — no LiDAR coverages |
 
 **What users are missing (plain English):** Wales already has good open LiDAR covering the country. We just cannot open those files from this website because the storage server refuses browser access. A tiny proxy (or the host enabling CORS) would unlock Wales the same way as England/Scotland.
-
----
-
-## 6. what3words (optional client-guide)
-
-| Item | Value |
-|---|---|
-| Convert | `https://api.what3words.com/v3/convert-to-coordinates?words={words}&key={key}` |
-| Auth | Session-only API key in model assumptions — never persisted or exported |
-| Fallback | Paste `lat, lon` in the Link to client panel (no key required) |
-| Role | Coarse Recorder-style centre + area (ha → circle) guide only; NFI parcels remain the selection truth |
 
 ---
 

@@ -37,7 +37,7 @@
     <input
       type="search"
       id="search-input"
-      placeholder="Place, village, or client ref…"
+      placeholder="Place, village, or group ref…"
       autocomplete="off"
       spellcheck="false"
       enterkeyhint="search"
@@ -85,13 +85,13 @@
         <span class="client-link-tag" id="client-link-tag"></span>
       </summary>
       <div class="client-link-body">
-        <p class="client-link-note">Opaque ref only — no Recorder lookup. Paste a what3words or lat, lon, set the guide area in hectares, then select woods that touch it.</p>
-        <label for="client-ref">CLIENT REF</label>
-        <input type="text" id="client-ref" placeholder="e.g. policy or Recorder id" autocomplete="off" spellcheck="false">
+        <p class="client-link-note">Optional opaque ref for your notes. Paste lat, lon, set the guide area in hectares, then select woods that touch it. Or turn Colour off and click the map to set the centre.</p>
+        <label for="client-ref">GROUP REF</label>
+        <input type="text" id="client-ref" placeholder="e.g. briefing or policy id" autocomplete="off" spellcheck="false">
         <div class="pair" style="margin-top:6px">
           <div>
-            <label for="client-w3w">WHAT3WORDS OR LAT, LON</label>
-            <input type="text" id="client-w3w" placeholder="word.word.word" autocomplete="off" spellcheck="false">
+            <label for="client-loc">LAT, LON</label>
+            <input type="text" id="client-loc" placeholder="54.28, -0.68" autocomplete="off" spellcheck="false">
           </div>
           <div>
             <label for="client-area">AREA HA</label>

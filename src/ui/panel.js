@@ -244,8 +244,7 @@ function clientLinkSummaryText() {
   const parts = [];
   const ref = (link.ref || '').trim();
   if (ref) parts.push(ref);
-  if (link.w3w) parts.push(`///${link.w3w}`);
-  else if (link.center) {
+  if (link.center) {
     parts.push(`${link.center[1].toFixed(5)}, ${link.center[0].toFixed(5)}`);
   }
   if (link.center && link.areaHa > 0) parts.push(`${Math.round(link.areaHa)} ha`);
@@ -264,13 +263,13 @@ export function render() {
   $('panel-title').textContent = n
     ? `${n} parcel${n > 1 ? 's' : ''} selected${ref ? ` · ${ref}` : ''}`
     : ref
-      ? `Linked · ${ref}`
+      ? `Grouped · ${ref}`
       : 'No parcels selected';
 
   const tag = $('client-link-tag');
   if (tag) {
     if (ref || state.clientLink?.status === 'shown') {
-      tag.textContent = ref ? 'LINKED' : 'GUIDE';
+      tag.textContent = ref ? 'GROUPED' : 'GUIDE';
       tag.classList.add('on');
     } else {
       tag.textContent = '';
@@ -285,17 +284,15 @@ export function render() {
     linkSum.hidden = !text;
   }
 
-  // Keep inputs in sync when state changes from Clear link (avoid fighting focus).
+  // Keep inputs in sync when state changes from Clear group (avoid fighting focus).
   const refInp = $('client-ref');
-  const w3wInp = $('client-w3w');
+  const locInp = $('client-loc');
   const areaInp = $('client-area');
   if (refInp && document.activeElement !== refInp) refInp.value = state.clientLink.ref || '';
-  if (w3wInp && document.activeElement !== w3wInp) {
-    w3wInp.value =
-      state.clientLink.w3w ||
-      (state.clientLink.center
-        ? `${state.clientLink.center[1].toFixed(5)}, ${state.clientLink.center[0].toFixed(5)}`
-        : '');
+  if (locInp && document.activeElement !== locInp) {
+    locInp.value = state.clientLink.center
+      ? `${state.clientLink.center[1].toFixed(5)}, ${state.clientLink.center[0].toFixed(5)}`
+      : '';
   }
   if (areaInp && document.activeElement !== areaInp) {
     areaInp.value = state.clientLink.areaHa || '';
@@ -684,9 +681,9 @@ export function bindExports() {
 
 function bindClientLink() {
   const refInp = $('client-ref');
-  const w3wInp = $('client-w3w');
+  const locInp = $('client-loc');
   const areaInp = $('client-area');
-  if (!refInp || !w3wInp || !areaInp) return;
+  if (!refInp || !locInp || !areaInp) return;
 
   areaInp.value = state.clientLink.areaHa;
 
@@ -703,16 +700,16 @@ function bindClientLink() {
     state.clientLink.ref = refInp.value;
     notifyClientChrome();
   };
-  w3wInp.oninput = () => {
-    state.clientLink.w3w = w3wInp.value.trim();
+  locInp.oninput = () => {
+    /* centre applied on Show guide / Select woods */
   };
   areaInp.oninput = () => {
     applyAreaFromInput();
   };
 
   $('btn-client-guide').onclick = async () => {
-    const raw = w3wInp.value.trim();
-    if (!raw) return toast('Enter a what3words or lat, lon first');
+    const raw = locInp.value.trim();
+    if (!raw) return toast('Enter lat, lon first');
     state.clientLink.ref = refInp.value;
     applyAreaFromInput();
     const btn = $('btn-client-guide');
@@ -729,8 +726,8 @@ function bindClientLink() {
     btn.disabled = true;
     try {
       if (!state.clientLink.center) {
-        const raw = w3wInp.value.trim();
-        if (!raw) return toast('Enter a what3words or lat, lon first');
+        const raw = locInp.value.trim();
+        if (!raw) return toast('Enter lat, lon first');
         state.clientLink.ref = refInp.value;
         applyAreaFromInput();
         const ok = await showClientGuide(raw);
@@ -745,7 +742,7 @@ function bindClientLink() {
   $('btn-client-clear').onclick = () => {
     resetClientLink();
     refInp.value = '';
-    w3wInp.value = '';
+    locInp.value = '';
     areaInp.value = state.clientLink.areaHa;
     toast('Group cleared');
   };
@@ -757,12 +754,12 @@ function notifyClientChrome() {
   $('panel-title').textContent = n
     ? `${n} parcel${n > 1 ? 's' : ''} selected${ref ? ` · ${ref}` : ''}`
     : ref
-      ? `Linked · ${ref}`
+      ? `Grouped · ${ref}`
       : 'No parcels selected';
   const tag = $('client-link-tag');
   if (tag) {
     if (ref || state.clientLink?.status === 'shown') {
-      tag.textContent = ref ? 'LINKED' : 'GUIDE';
+      tag.textContent = ref ? 'GROUPED' : 'GUIDE';
       tag.classList.add('on');
     } else {
       tag.textContent = '';

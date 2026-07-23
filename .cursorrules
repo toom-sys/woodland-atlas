@@ -4,6 +4,6 @@ Never remove the graceful-degradation paths or status pills.
 Never hardcode an ArcGIS service name without the discovery fallback pattern (SPEC §3.1).
 All scoring/valuation constants live in the assumptions state and are user-editable; no magic numbers in scoring functions.
 Preserve the design tokens in SPEC §2 exactly; amber = selection/emphasis only; red only for HIGH risk bands.
-No Recorder client directory/names/book SIs; opaque typed client refs + w3w guide only (SPEC §6.1). No analytics; no persistence beyond in-memory state.
+No client directory or PII in the browser; opaque typed group refs + lat/lon guide only (SPEC §6.1). No analytics; no persistence beyond in-memory state.
 Every external fetch: timeout, catch, defined fallback, pill update.
 UI copy: sentence case, plain verbs; mono uppercase only for micro-labels.

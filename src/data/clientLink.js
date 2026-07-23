@@ -1,16 +1,12 @@
 /**
- * Session-only client link + Recorder-style w3w/area guide.
- * Opaque user-typed ref only — no Recorder fetch, no client directory.
- * Optional what3words convert (API key in session state, never exported).
+ * Session-only woodland group guide: opaque typed ref + lat/lon centre + area (ha).
+ * No third-party location API; no client directory fetch.
  * Guide size is entered in hectares and converted to a circle radius for the map.
  */
 
 import { state, DEFAULT_CLIENT_AREA_HA } from '../state.js';
-import { pointInPolygon, withTimeout } from './geo.js';
+import { pointInPolygon } from './geo.js';
 
-const W3W_TIMEOUT_MS = 8000;
-const W3W_CONVERT =
-  'https://api.what3words.com/v3/convert-to-coordinates';
 const EARTH_R = 6371000;
 const M2_PER_HA = 10000;
 
@@ -39,11 +35,10 @@ export function clampAreaHa(raw) {
   return Math.min(n, 100000);
 }
 
-/** Default empty client-link state. */
+/** Default empty group-guide state. */
 export function emptyClientLink() {
   return {
     ref: '',
-    w3w: '',
     center: null, // [lon, lat]
     areaHa: DEFAULT_CLIENT_AREA_HA,
     status: 'idle' // idle | shown | error
@@ -186,14 +181,6 @@ export function geometryTouchesCircle(geometry, center, radiusM) {
   return false;
 }
 
-/** Parse `word.word.word` or `///word.word.word`. */
-export function parseW3w(raw) {
-  if (!raw) return null;
-  const s = String(raw).trim().replace(/^\/+/, '').toLowerCase();
-  const m = s.match(/^([a-z]+\.[a-z]+\.[a-z]+)$/);
-  return m ? m[1] : null;
-}
-
 /** Parse `lat, lon` or `lon, lat` — GB latitudes are ~49–61, so lat-first if |a| > 20. */
 export function parseLatLon(raw) {
   if (!raw) return null;
@@ -217,85 +204,28 @@ export function parseLatLon(raw) {
 
 /**
  * Resolve a location string to [lon, lat].
- * Accepts lat/lon paste, or w3w words when an API key is present.
+ * Accepts lat/lon paste only.
  */
-export async function resolveLocation(raw, apiKey) {
+export async function resolveLocation(raw) {
   const coords = parseLatLon(raw);
   if (coords) {
-    return { center: coords, w3w: parseW3w(raw) || '', source: 'coords' };
+    return { center: coords, source: 'coords' };
   }
-
-  const words = parseW3w(raw);
-  if (!words) {
-    return {
-      error:
-        'Enter a what3words address (word.word.word) or coordinates as lat, lon'
-    };
-  }
-
-  if (!apiKey || !String(apiKey).trim()) {
-    return {
-      error:
-        'what3words needs an API key (model assumptions) — or paste lat, lon instead'
-    };
-  }
-
-  try {
-    const url = `${W3W_CONVERT}?words=${encodeURIComponent(words)}&key=${encodeURIComponent(String(apiKey).trim())}`;
-    const ctl = new AbortController();
-    const res = await withTimeout(
-      fetch(url, { signal: ctl.signal }),
-      W3W_TIMEOUT_MS,
-      'what3words timeout'
-    );
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      if (res.status === 402) {
-        return {
-          error:
-            'what3words plan blocks convert-to-coordinates — upgrade at accounts.what3words.com/select-plan, or paste lat, lon'
-        };
-      }
-      if (res.status === 401) {
-        return {
-          error:
-            'what3words API key invalid — check Model assumptions, or paste lat, lon'
-        };
-      }
-      const code = data?.error?.code;
-      return {
-        error: code
-          ? `what3words lookup failed (${res.status}: ${code})`
-          : `what3words lookup failed (${res.status})`
-      };
-    }
-    const lat = data?.coordinates?.lat;
-    const lon = data?.coordinates?.lng;
-    if (lat == null || lon == null) {
-      return { error: 'what3words returned no coordinates' };
-    }
-    return { center: [lon, lat], w3w: words, source: 'w3w' };
-  } catch (err) {
-    return {
-      error:
-        err?.message === 'what3words timeout'
-          ? 'what3words timed out — paste lat, lon instead'
-          : 'what3words unavailable — paste lat, lon instead'
-    };
-  }
+  return {
+    error: 'Enter coordinates as lat, lon (for example 54.28, -0.68)'
+  };
 }
 
-/** Snapshot for exports — never includes API keys. */
+/** Snapshot for exports. */
 export function clientLinkExport() {
   const link = state.clientLink;
   if (!link) return null;
   const ref = (link.ref || '').trim();
-  if (!ref && !link.center && !(link.w3w || '').trim()) return null;
+  if (!ref && !link.center) return null;
   const areaHa = link.areaHa > 0 ? link.areaHa : DEFAULT_CLIENT_AREA_HA;
   const radiusM = haToRadiusM(areaHa);
   return {
     ref: ref || null,
-    w3w: (link.w3w || '').trim() || null,
     center: link.center ? [link.center[0], link.center[1]] : null,
     areaHa,
     radiusM: radiusM > 0 ? Math.round(radiusM) : null

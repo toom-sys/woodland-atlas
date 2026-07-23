@@ -1,11 +1,10 @@
 /**
- * Masthead search: GB places (geocode) + session client refs.
+ * Masthead search: GB places (geocode) + session group refs.
  */
 
 import { state, SAMPLE, SAMPLE_LABEL } from '../state.js';
 import { searchPlaces, parseDirectLocation } from '../data/geocode.js';
-import { resolveLocation } from '../data/clientLink.js';
-import { flyToSearchHit, flyToClientEntry, showClientGuide } from '../map.js';
+import { flyToSearchHit, flyToClientEntry } from '../map.js';
 import { toast } from './pills.js';
 
 const $ = (id) => document.getElementById(id);
@@ -25,29 +24,27 @@ function clientHits(query) {
     if (!entry?.ref) return;
     const key = entry.ref.toLowerCase();
     if (seen.has(key)) return;
-    if (!key.includes(q) && !(entry.w3w || '').toLowerCase().includes(q)) return;
+    if (!key.includes(q)) return;
     if (!entry.center) return;
     seen.add(key);
     out.push({
       id: `client-${key}`,
       kind: 'client',
-      kindLabel: 'client',
+      kindLabel: 'group',
       label: entry.ref,
       name: entry.ref,
       center: entry.center,
       areaHa: entry.areaHa,
       radiusM: entry.radiusM,
-      w3w: entry.w3w || '',
       source: 'client'
     });
   };
 
-  // Current link first if it matches.
+  // Current group first if it matches.
   const cur = state.clientLink;
   if (cur?.ref && cur.center) {
     consider({
       ref: cur.ref,
-      w3w: cur.w3w,
       center: cur.center,
       areaHa: cur.areaHa
     });
@@ -198,21 +195,10 @@ async function pickHit(idx) {
   if (hit.source === 'client') {
     await flyToClientEntry({
       ref: hit.name,
-      w3w: hit.w3w,
       center: hit.center,
       areaHa: hit.areaHa,
       radiusM: hit.radiusM
     });
-    return;
-  }
-
-  if (hit.source === 'w3w') {
-    const ok = await showClientGuide(hit.w3w || hit.name);
-    if (!ok) {
-      // try resolve for fly without guide if key missing — resolve already toasted
-      const resolved = await resolveLocation(hit.w3w || hit.name, state.w3wApiKey);
-      if (resolved.center) flyToSearchHit({ center: resolved.center, zoom: 12.2 });
-    }
     return;
   }
 

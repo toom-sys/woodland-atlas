@@ -587,7 +587,6 @@ function pickClientLinkAt(lngLat) {
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
   const link = state.clientLink;
   link.center = [lon, lat];
-  link.w3w = '';
   if (!(link.areaHa > 0)) link.areaHa = DEFAULT_CLIENT_AREA_HA;
   link.status = 'shown';
   rememberClientInHistory();
@@ -603,7 +602,7 @@ function pickClientLinkAt(lngLat) {
       tog.textContent = '▼ SELECTION & VALUE';
     }
   }
-  toast(`Client centre · ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+  toast(`Guide centre · ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
 }
 
 function renderLegend() {
@@ -784,11 +783,11 @@ function fitToClientGuide() {
 
 /**
  * Resolve location → draw guide → fly to it.
- * `locationRaw` is w3w or lat,lon; radius/ref read from state.clientLink (already updated by UI).
+ * `locationRaw` is lat,lon; radius/ref read from state.clientLink (already updated by UI).
  */
 export async function showClientGuide(locationRaw) {
   const link = state.clientLink;
-  const result = await resolveLocation(locationRaw, state.w3wApiKey);
+  const result = await resolveLocation(locationRaw);
   if (result.error) {
     link.status = 'error';
     link.center = null;
@@ -798,7 +797,6 @@ export async function showClientGuide(locationRaw) {
     return false;
   }
   link.center = result.center;
-  if (result.w3w) link.w3w = result.w3w;
   link.status = 'shown';
   rememberClientInHistory();
   pushClientGuide();
@@ -806,22 +804,17 @@ export async function showClientGuide(locationRaw) {
   if (state.live) await fetchView();
   notify();
   const ha = link.areaHa > 0 ? link.areaHa : DEFAULT_CLIENT_AREA_HA;
-  toast(
-    result.source === 'w3w'
-      ? `Guide shown · ///${result.w3w} · ${ha} ha`
-      : `Guide shown · ${ha} ha`
-  );
+  toast(`Guide shown · ${ha} ha`);
   return true;
 }
 
-/** Keep a short session list of linked client refs for search. */
+/** Keep a short session list of grouped refs for search. */
 export function rememberClientInHistory() {
   const link = state.clientLink;
   const ref = (link?.ref || '').trim();
   if (!ref || !link.center) return;
   const entry = {
     ref,
-    w3w: (link.w3w || '').trim(),
     center: [link.center[0], link.center[1]],
     areaHa: link.areaHa > 0 ? link.areaHa : DEFAULT_CLIENT_AREA_HA
   };
@@ -856,17 +849,16 @@ export function flyToSearchHit(hit) {
 }
 
 /**
- * Restore a session client from history / search and show its guide.
- * @param {{ ref:string, w3w?:string, center:[number,number], areaHa?:number, radiusM?:number }} entry
+ * Restore a session group from history / search and show its guide.
+ * @param {{ ref:string, center:[number,number], areaHa?:number, radiusM?:number }} entry
  */
 export async function flyToClientEntry(entry) {
   if (!entry?.center) {
-    toast('That client has no saved location yet');
+    toast('That group has no saved location yet');
     return false;
   }
   const link = state.clientLink;
   link.ref = entry.ref || '';
-  link.w3w = entry.w3w || '';
   link.center = [entry.center[0], entry.center[1]];
   const fromHa = clampAreaHa(entry.areaHa);
   const fromRadius =
@@ -878,7 +870,7 @@ export async function flyToClientEntry(entry) {
   await fitToClientGuide();
   if (state.live) await fetchView();
   notify();
-  toast(`Client · ${link.ref}`);
+  toast(`Group · ${link.ref}`);
   return true;
 }
 
@@ -887,7 +879,7 @@ export async function selectParcelsTouchingGuide() {
   const link = state.clientLink;
   const r = guideRadiusM(link);
   if (!link?.center || !(r > 0)) {
-    toast('Show the w3w guide first');
+    toast('Show the guide first');
     return 0;
   }
   pushClientGuide();
