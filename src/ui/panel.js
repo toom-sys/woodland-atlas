@@ -9,7 +9,8 @@ import {
   resetClientLink,
   pushClientGuide,
   playLossScenario,
-  clearLossPlay
+  clearLossPlay,
+  beginSplitMode
 } from '../map.js';
 import { COVER_COLORS, COVER_LABELS } from '../data/nation.js';
 import { AGE_SOURCE_LABELS } from '../data/nfi.js';
@@ -388,7 +389,7 @@ export function render() {
     <div class="parcel" data-id="${r.id}">
       <div class="parcel-top">
         <span class="swatch" style="background:${swatch}"></span>
-        <span class="name">${r.type}</span>
+        <span class="name">${r.type}${r.split ? ' · split' : ''}</span>
         <span class="ha">${fmtHa(r.ha)} ha</span>
         <button class="x" title="Remove" aria-label="Remove parcel">✕</button>
       </div>
@@ -399,6 +400,11 @@ export function render() {
         ).join('')}</select>
         <span class="age-source" title="NFI does not publish stand age — estimated from open data, override anytime">${AGE_SOURCE_LABELS[r.ageSource] || AGE_SOURCE_LABELS.default}</span>
       </div>
+      ${
+        r.split
+          ? ''
+          : `<div class="parcel-actions"><button type="button" class="split-btn" data-split="${r.id}">Split parcel</button></div>`
+      }
       <div class="parcel-enrich">${enrichRow}</div>
       <div class="parcel-risk">
         <div class="risk-chips">
@@ -434,6 +440,13 @@ export function render() {
       setFeatureSelected(id, false);
       render();
     };
+    const splitBtn = card.querySelector('.split-btn');
+    if (splitBtn) {
+      splitBtn.onclick = (e) => {
+        e.stopPropagation();
+        beginSplitMode(id);
+      };
+    }
     card.querySelector('select').onchange = (e) => {
       const sel = state.selected.get(id);
       sel.age = e.target.value;

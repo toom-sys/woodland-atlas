@@ -113,7 +113,9 @@ export function valueParcel(id) {
     coverKey: f.properties.__cover || null,
     heightHint: heightPlausibilityHint(canopyHeightM, age, ageSource),
     windthrow,
-    fire
+    fire,
+    split: !!f.properties.__split,
+    parentId: f.properties.__parentId || null
   };
 }
 

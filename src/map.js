@@ -33,6 +33,7 @@ import {
   lossForStep
 } from './scoring/lossScenario.js';
 import { setPill, toast } from './ui/pills.js';
+import { splitFeatureByLine, selectionForSplitPiece } from './data/split.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -200,6 +201,10 @@ function buildStyle() {
       'loss-path': {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
+      },
+      'split-draft': {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
       }
     },
     layers: [
@@ -310,6 +315,30 @@ function buildStyle() {
             '#B98A2C'
           ]
         }
+      },
+      {
+        id: 'split-draft-line',
+        type: 'line',
+        source: 'split-draft',
+        filter: ['==', ['get', 'kind'], 'line'],
+        paint: {
+          'line-color': '#F2B63C',
+          'line-width': 2.2,
+          'line-opacity': 0.95,
+          'line-dasharray': [1.5, 1]
+        }
+      },
+      {
+        id: 'split-draft-point',
+        type: 'circle',
+        source: 'split-draft',
+        filter: ['==', ['get', 'kind'], 'vertex'],
+        paint: {
+          'circle-radius': 5,
+          'circle-color': '#F2B63C',
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#11150E'
+        }
       }
     ]
   };
@@ -329,7 +358,207 @@ export function applyColorMode() {
 
 function syncPickCursor() {
   if (!map) return;
+  if (state.splitDraw?.active) {
+    map.getCanvas().style.cursor = 'crosshair';
+    return;
+  }
   map.getCanvas().style.cursor = state.colorMode === 'off' ? 'crosshair' : '';
+}
+
+function splitHint() {
+  const n = state.splitDraw?.points?.length || 0;
+  if (n < 2) {
+    return 'Split mode — click two points across the parcel to draw the cut, then Finish (or press Enter). Esc cancels.';
+  }
+  return 'Split mode — click Finish or press Enter to cut. Esc cancels. Add more points to refine the cut line.';
+}
+
+function updateSplitDraft() {
+  if (!map?.getSource('split-draft')) return;
+  const pts = state.splitDraw?.points || [];
+  const features = [];
+  if (pts.length >= 2) {
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'line' },
+      geometry: { type: 'LineString', coordinates: pts }
+    });
+  }
+  pts.forEach((c, i) => {
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'vertex', i },
+      geometry: { type: 'Point', coordinates: c }
+    });
+  });
+  map.getSource('split-draft').setData({ type: 'FeatureCollection', features });
+}
+
+function setSplitButton() {
+  const btn = $('btn-split');
+  if (!btn) return;
+  const draw = state.splitDraw;
+  if (!draw?.active) {
+    btn.textContent = '✂ SPLIT PARCEL';
+    btn.classList.remove('active');
+    btn.setAttribute('aria-pressed', 'false');
+    return;
+  }
+  btn.classList.add('active');
+  btn.setAttribute('aria-pressed', 'true');
+  btn.textContent =
+    (draw.points?.length || 0) >= 2 ? '✂ FINISH CUT' : '✂ SPLIT · DRAWING';
+}
+
+function cancelSplitMode({ silent = false } = {}) {
+  if (!state.splitDraw?.active) return;
+  const restore = state.splitDraw.camera;
+  state.splitDraw = null;
+  updateSplitDraft();
+  setSplitButton();
+  if (map) map.doubleClickZoom.enable();
+  syncPickCursor();
+  if (restore && map) {
+    cameraTo(
+      {
+        pitch: restore.pitch,
+        bearing: restore.bearing,
+        duration: 500
+      },
+      'ease'
+    );
+  }
+  const hint = $('hint');
+  if (hint) hint.textContent = colourModeHint(state.colorMode);
+  if (!silent) toast('Split cancelled');
+}
+
+/**
+ * Start drawing a cut across one selected parcel.
+ * @param {string} [targetId] — parcel id; defaults to sole selection.
+ */
+export function beginSplitMode(targetId) {
+  if (typeof globalThis.polygonClipping === 'undefined') {
+    toast('Split tool unavailable — clipping library failed to load');
+    return;
+  }
+  let id = targetId;
+  if (!id) {
+    if (state.selected.size === 1) id = [...state.selected.keys()][0];
+    else if (state.selected.size === 0) {
+      toast('Select a parcel first, then split it');
+      return;
+    } else {
+      toast('Select a single parcel to split (or use Split on its card)');
+      return;
+    }
+  }
+  const feature = state.features.get(id);
+  if (!feature) {
+    toast('Parcel not loaded');
+    return;
+  }
+  if (state.suppressed.has(id)) {
+    toast('That parcel is already split');
+    return;
+  }
+
+  cancelSplitMode({ silent: true });
+  state.splitDraw = {
+    active: true,
+    targetId: id,
+    points: [],
+    camera: map
+      ? { pitch: map.getPitch(), bearing: map.getBearing() }
+      : { pitch: 55, bearing: -18 }
+  };
+  // Flat view makes the cut easier to place.
+  if (map) {
+    map.doubleClickZoom.disable();
+    if (map.getPitch() > 2) {
+      cameraTo({ pitch: 0, bearing: 0, duration: 500 }, 'ease');
+    }
+  }
+  setSplitButton();
+  updateSplitDraft();
+  syncPickCursor();
+  const hint = $('hint');
+  if (hint) hint.textContent = splitHint();
+  toast('Draw a cut line across the parcel');
+}
+
+function finishSplitCut() {
+  const draw = state.splitDraw;
+  if (!draw?.active) return;
+  if ((draw.points?.length || 0) < 2) {
+    toast('Add at least two points for the cut');
+    return;
+  }
+  const parent = state.features.get(draw.targetId);
+  if (!parent) {
+    cancelSplitMode({ silent: true });
+    toast('Parcel no longer available');
+    return;
+  }
+  const { pieces, error } = splitFeatureByLine(parent, draw.points);
+  if (error || pieces.length !== 2) {
+    toast(error || 'Could not split parcel');
+    return;
+  }
+
+  const parentSel = state.selected.get(draw.targetId);
+  const restore = draw.camera;
+  state.splitDraw = null;
+  updateSplitDraft();
+  setSplitButton();
+
+  for (const piece of pieces) {
+    const pid = piece.properties.__id;
+    state.features.set(pid, piece);
+  }
+  state.suppressed.add(draw.targetId);
+  if (state.selected.has(draw.targetId)) {
+    state.selected.delete(draw.targetId);
+    setFeatureSelected(draw.targetId, false);
+  }
+
+  for (const piece of pieces) {
+    const pid = piece.properties.__id;
+    state.selected.set(pid, selectionForSplitPiece(piece, parentSel));
+    enrichParcel(pid);
+  }
+
+  pushSource();
+  if (map) map.doubleClickZoom.enable();
+  syncPickCursor();
+  if (restore && map) {
+    cameraTo(
+      {
+        pitch: restore.pitch,
+        bearing: restore.bearing,
+        duration: 600
+      },
+      'ease'
+    );
+  }
+  const hint = $('hint');
+  if (hint) hint.textContent = colourModeHint(state.colorMode);
+  const ha0 = pieces[0].properties.__ha;
+  const ha1 = pieces[1].properties.__ha;
+  toast(
+    `Split into ${ha0.toFixed(2)} ha + ${ha1.toFixed(2)} ha — both pieces selected`
+  );
+  notify();
+}
+
+function onSplitMapClick(e) {
+  if (!state.splitDraw?.active) return;
+  const { lng, lat } = e.lngLat;
+  state.splitDraw.points.push([lng, lat]);
+  updateSplitDraft();
+  setSplitButton();
+  const hint = $('hint');
+  if (hint) hint.textContent = splitHint();
 }
 
 function colourModeLabel(mode) {
@@ -436,7 +665,10 @@ export function pushSource() {
   capFeatures(state.features, state.selected);
   map.getSource('nfi').setData({
     type: 'FeatureCollection',
-    features: [...state.features.values()]
+    features: [...state.features.values()].filter((f) => {
+      const id = f.properties?.__id;
+      return id && !state.suppressed.has(id);
+    })
   });
   for (const id of state.selected.keys()) {
     map.setFeatureState({ source: 'nfi', id }, { sel: true });
@@ -914,6 +1146,7 @@ export function initMap() {
   map.on('moveend', fetchView);
 
   map.on('mouseenter', 'nfi-fill', () => {
+    if (state.splitDraw?.active) return;
     if (state.colorMode === 'off') return;
     map.getCanvas().style.cursor = 'pointer';
   });
@@ -922,6 +1155,7 @@ export function initMap() {
   });
 
   map.on('click', 'nfi-fill', (e) => {
+    if (state.splitDraw?.active) return;
     if (state.colorMode === 'off') return;
     const f = e.features && e.features[0];
     if (!f) return;
@@ -957,8 +1191,29 @@ export function initMap() {
 
   /* Colour · off: click any spot → client-link lat, lon (+ guide). */
   map.on('click', (e) => {
+    if (state.splitDraw?.active) {
+      onSplitMapClick(e);
+      return;
+    }
     if (state.colorMode !== 'off') return;
     pickClientLinkAt(e.lngLat);
+  });
+
+  map.on('dblclick', (e) => {
+    if (!state.splitDraw?.active) return;
+    e.preventDefault();
+    if ((state.splitDraw.points?.length || 0) >= 2) finishSplitCut();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (!state.splitDraw?.active) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelSplitMode();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      finishSplitCut();
+    }
   });
 
   syncPickCursor();
@@ -999,7 +1254,20 @@ export function bindMapControls() {
     $('btn-demo').textContent = `✦ FLY TO ${SAMPLE_LABEL.toUpperCase()}`;
   }
 
+  const btnSplit = $('btn-split');
+  if (btnSplit) {
+    btnSplit.onclick = () => {
+      if (state.splitDraw?.active) {
+        if ((state.splitDraw.points?.length || 0) >= 2) finishSplitCut();
+        else cancelSplitMode();
+        return;
+      }
+      beginSplitMode();
+    };
+  }
+
   $('btn-clear').onclick = () => {
+    if (state.splitDraw?.active) cancelSplitMode({ silent: true });
     clearLossPlay();
     clearSelectionVisuals();
     state.selected.clear();

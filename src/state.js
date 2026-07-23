@@ -233,7 +233,14 @@ export const state = {
    */
   clientHistory: [],
   /** Active indicative loss play — in-memory only. */
-  lossPlay: null
+  lossPlay: null,
+  /**
+   * Parent NFI ids hidden after a manual split (pieces replace them on the map).
+   * Parents stay in `features` so viewport refresh does not resurrect full polygons.
+   */
+  suppressed: new Set(),
+  /** Manual split draw session — null when idle. */
+  splitDraw: null
 };
 
 const listeners = new Set();

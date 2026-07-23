@@ -299,6 +299,23 @@ details.parcels-fold[open] summary .glyph{transform:rotate(90deg)}
 .parcel-top .x:hover{color:var(--amber)}
 .parcel-mid{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
 .parcel-mid label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--moss)}
+.parcel-actions{margin-top:8px}
+.parcel-actions .split-btn{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--amber);
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:5px 8px;
+  cursor:pointer;
+}
+.parcel-actions .split-btn:hover,.parcel-actions .split-btn:focus-visible{
+  border-color:var(--amber-dim);
+  outline:none;
+}
 .parcel-mid select{
   background:var(--ink);color:var(--paper);border:1px solid var(--line);border-radius:5px;
   font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 6px;
