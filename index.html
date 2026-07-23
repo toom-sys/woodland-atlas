@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Woodland Atlas — open data, selected & valued</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://basemaps.cartocdn.com">
+<link rel="preconnect" href="https://services2.arcgis.com">
+<link rel="preconnect" href="https://environment.data.gov.uk">
+<link rel="preconnect" href="https://srsp-open-data.s3.eu-west-2.amazonaws.com">
+<link rel="preconnect" href="https://datamap.gov.wales">
+<link rel="preconnect" href="https://services.arcgis.com">
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"></noscript>
+<link href="./vendor/maplibre-gl.min.css" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<div id="map" aria-label="Woodland map"></div>
+
+<header class="masthead">
+  <div class="kicker">WOODLAND ATLAS · OPEN DATA</div>
+  <h1>Select woodland. <em>See its value.</em></h1>
+  <p class="sub">Every parcel below is drawn from free GB public data. Click parcels to build a selection; the model prices it live.</p>
+  <div class="pills" id="pills">
+    <span class="pill" id="pill-nfi"><i></i>NFI · connecting…</span>
+    <span class="pill" id="pill-lidar"><i></i>LIDAR</span>
+    <span class="pill" id="pill-fsi"><i></i>FSI · MANUAL</span>
+    <span class="pill" id="pill-base"><i></i>BASEMAP</span>
+    <span class="pill" id="pill-mode"><i></i>2.5D</span>
+  </div>
+  <div class="search" id="search">
+    <label class="search-kicker" for="search-input">SEARCH</label>
+    <input
+      type="search"
+      id="search-input"
+      placeholder="Place, village, or client ref…"
+      autocomplete="off"
+      spellcheck="false"
+      enterkeyhint="search"
+      aria-autocomplete="list"
+      aria-controls="search-results"
+      aria-expanded="false"
+    >
+    <ul class="search-results" id="search-results" role="listbox" hidden></ul>
+  </div>
+  <div class="hint" id="hint">Colours show which public LiDAR each wood can use — green England, blue Scotland, stone Wales (blocked), dark = estimate only.</div>
+</header>
+
+<div class="map-chrome-bl">
+  <div class="legend" id="legend">
+    <span class="legend-kicker">PUBLIC DATA</span>
+    <span><i style="background:#3E7C4F"></i>ENGLAND · EA</span>
+    <span><i style="background:#5B7C9A"></i>SCOTLAND · PARTIAL</span>
+    <span><i style="background:#3A4A58"></i>SCOTLAND · NO TILE</span>
+    <span><i style="background:#6B5E4E"></i>WALES · BLOCKED</span>
+    <span><i style="background:#4A5340"></i>ESTIMATE ONLY</span>
+    <span><i style="background:var(--amber)"></i>SELECTED</span>
+  </div>
+  <div class="controls">
+    <button id="btn-tilt" class="active" aria-pressed="true">◪ TILT · ON</button>
+    <button id="btn-sat" aria-pressed="false">▦ SATELLITE · OFF</button>
+    <button id="btn-colour" class="active" aria-pressed="true">▣ COLOUR · PUBLIC DATA</button>
+    <button id="btn-risk" aria-pressed="false">◈ RISK VIEW · OFF</button>
+    <button id="btn-demo">✦ FLY TO DALBY FOREST</button>
+    <button id="btn-clear">✕ CLEAR SELECTION</button>
+  </div>
+</div>
+
+<aside class="panel" id="panel">
+  <button class="panel-toggle" id="panel-toggle" aria-expanded="false" aria-controls="panel-body">▲ SELECTION &amp; VALUE</button>
+  <div class="panel-head">
+    <div class="kicker">SELECTION</div>
+    <h2 id="panel-title">No parcels selected</h2>
+  </div>
+  <div class="panel-body" id="panel-body">
+    <details class="client-link" id="client-link">
+      <summary>
+        <span class="glyph">▸</span>Link to client
+        <span class="client-link-sum" id="client-link-sum" hidden></span>
+        <span class="client-link-tag" id="client-link-tag"></span>
+      </summary>
+      <div class="client-link-body">
+        <p class="client-link-note">Opaque ref only — no Recorder lookup. Paste a what3words or lat, lon, set the guide area in hectares, then select woods that touch it.</p>
+        <label for="client-ref">CLIENT REF</label>
+        <input type="text" id="client-ref" placeholder="e.g. policy or Recorder id" autocomplete="off" spellcheck="false">
+        <div class="pair" style="margin-top:6px">
+          <div>
+            <label for="client-w3w">WHAT3WORDS OR LAT, LON</label>
+            <input type="text" id="client-w3w" placeholder="word.word.word" autocomplete="off" spellcheck="false">
+          </div>
+          <div>
+            <label for="client-area">AREA HA</label>
+            <input type="number" id="client-area" min="1" step="1" inputmode="numeric">
+          </div>
+        </div>
+        <div class="client-link-actions">
+          <button type="button" id="btn-client-guide">Show guide</button>
+          <button type="button" id="btn-client-touch" class="primary">Select woods that touch</button>
+        </div>
+        <button type="button" id="btn-client-clear" class="client-link-clear">Clear link</button>
+      </div>
+    </details>
+    <details class="loss-play" id="loss-play">
+      <summary><span class="glyph">▸</span>Show a loss <span class="loss-play-tag" id="loss-play-tag"></span></summary>
+      <div class="loss-play-body">
+        <p class="loss-play-note">Indicative illustration only — not a modelled claim. Plays a storm path or fire spread across the selection with tiered severity and SI loss (capital ≈ timber + land).</p>
+        <div class="pair">
+          <div>
+            <label for="loss-hazard">HAZARD</label>
+            <select id="loss-hazard" aria-label="Hazard type">
+              <option value="storm">Storm path</option>
+              <option value="fire">Fire spread</option>
+            </select>
+          </div>
+          <div>
+            <label for="loss-scenario">SCENARIO</label>
+            <select id="loss-scenario" aria-label="Loss scenario"></select>
+          </div>
+        </div>
+        <div class="loss-play-actions">
+          <button type="button" id="btn-loss-run" class="primary">Play scenario</button>
+          <button type="button" id="btn-loss-clear">Clear loss</button>
+        </div>
+      </div>
+    </details>
+    <div id="loss-slot"></div>
+    <div class="empty" id="empty-state">
+      <b>Nothing selected yet.</b><br>
+      Zoom in until parcels appear, then click one.<br>
+      Use <b>Fly to Dalby Forest</b> to open a well-known Yorkshire woodland.
+    </div>
+    <div id="totals-slot"></div>
+    <div id="parcels-slot"></div>
+    <details class="assume" id="assume">
+      <summary><span class="glyph">▸</span>Model assumptions <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--moss)">EDITABLE</span></summary>
+      <div class="assume-body">
+        <h4>STANDING TIMBER · £/HA</h4>
+        <div class="rate-grid" id="timber-grid">
+          <span></span><span class="hdr">CONIFER</span><span class="hdr">B'LEAF</span><span class="hdr">MIXED</span>
+        </div>
+        <h4>LAND · £/HA</h4>
+        <input type="number" id="rate-land" step="500">
+        <h4>CARBON · INDICATIVE</h4>
+        <div class="pair">
+          <div><label>PRICE £/tCO₂e</label><input type="number" id="rate-cprice" step="1"></div>
+          <div><label>&nbsp;</label><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--moss)">seq. rates by age below</span></div>
+        </div>
+        <div class="pair" style="margin-top:6px" id="seq-grid"></div>
+        <h4>WINDTHROW · FORESTGALES-INSPIRED</h4>
+        <div id="windthrow-assume"></div>
+        <h4>FIRE · SUSCEPTIBILITY × FSI</h4>
+        <div id="fire-assume"></div>
+        <p style="margin-top:10px;color:var(--moss);font-size:11px;line-height:1.5">
+          Defaults are round-number placeholders for demonstration, not market rates. Timber values assume standing sale; carbon shown as indicative annual sequestration income, not verified WCC units. Windthrow is a transparent composite from open inputs — not the ForestGALES model. Fire blends static susceptibility with the Met Office FSI (live or manual). Ignition proximity is assumed in v2.
+        </p>
+      </div>
+    </details>
+  </div>
+  <div class="panel-actions">
+    <button id="btn-export">EXPORT JSON</button>
+    <button id="btn-csv" class="primary">EXPORT CSV</button>
+  </div>
+</aside>
+
+<div class="footer">
+  <span><b>OGL</b> NFI © Forestry Commission · EA LiDAR © Environment Agency · Scotland NLP © Scottish Gov · FSI © Met Office / Natural England</span>
+  <span class="footer-gaps"><b>GAPS</b> Wales LiDAR browser-blocked · Scotland cover rolling out · FSI may be manual</span>
+  <span><b>INDICATIVE</b> internal briefing · heights estimated or sampled, not surveyed · windthrow ForestGALES-inspired · exposure is a topex proxy · ignition assumed</span>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="./vendor/maplibre-gl.min.js"></script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
