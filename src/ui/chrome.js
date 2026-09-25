@@ -35,14 +35,23 @@ export function initChrome() {
   const mastToggle = $('masthead-toggle');
   const panel = $('panel');
   const panelToggle = $('panel-collapse');
+  const panelHead = panel?.querySelector('.panel-head');
 
   mastToggle?.addEventListener('click', () => {
     masthead?.classList.toggle('collapsed');
     syncMasthead();
   });
 
-  panelToggle?.addEventListener('click', () => {
+  panelToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
     panel?.classList.toggle('collapsed');
+    syncPanel();
+  });
+
+  // Collapsed header is a large expand target so the 28px chevron is not the only hit area.
+  panelHead?.addEventListener('click', () => {
+    if (!panel?.classList.contains('collapsed')) return;
+    panel.classList.remove('collapsed');
     syncPanel();
   });
 

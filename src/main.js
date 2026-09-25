@@ -4,9 +4,9 @@ import { initChrome } from './ui/chrome.js';
 import { initPanel } from './ui/panel.js';
 import { initSearch } from './ui/search.js';
 
-initMap();
-bindMapControls();
 buildAssumeUI();
 initChrome();
 initPanel();
 initSearch();
+initMap();
+bindMapControls();

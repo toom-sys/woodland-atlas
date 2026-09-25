@@ -70,8 +70,9 @@ body{
   font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1;
   color:var(--amber);background:transparent;
   border:1px solid var(--line);border-radius:6px;
-  width:28px;height:28px;padding:0;cursor:pointer;flex-shrink:0;
+  width:32px;height:32px;padding:0;cursor:pointer;flex-shrink:0;
   display:inline-flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;
 }
 .chrome-toggle:hover,.chrome-toggle:focus-visible{
   border-color:var(--amber-dim);outline:none;
@@ -213,8 +214,8 @@ body{
 .panel-head h2{font-size:17px;font-weight:600;margin-top:3px}
 .panel-head .chrome-toggle{margin-top:1px}
 @media (min-width:821px){
-  .panel.collapsed{bottom:auto}
-  .panel.collapsed .panel-head{border-bottom:none}
+  .panel.collapsed{bottom:auto;height:auto}
+  .panel.collapsed .panel-head{border-bottom:none;cursor:pointer}
   .panel.collapsed .panel-body,
   .panel.collapsed .panel-actions{display:none}
 }
@@ -608,6 +609,10 @@ details.loss-play[open] summary .glyph{transform:rotate(90deg)}
   }
   .masthead .chrome-toggle{order:-1}
   .masthead .chrome-bar{justify-content:flex-start}
+  .masthead.collapsed{
+    width:auto;max-width:none;padding:6px;
+  }
+  .masthead.collapsed .kicker{display:none}
   .masthead .sub{display:none}
   .masthead h1{font-size:16px}
   .pills{gap:4px}
