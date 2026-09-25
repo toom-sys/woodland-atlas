@@ -38,7 +38,7 @@ woodland-atlas/
 │       ├── search.js      # place + session client search
 │       ├── assumptions.js # editable rates drawer
 │       ├── pills.js       # data-source status pills
-│       └── chrome.js      # masthead + selection panel collapse
+│       └── chrome.js      # atlas / map-tools / selection overlay groups
 ├── docs/
 │   └── SPEC.md            # this file
 └── .cursorrules           # points at this spec; see §9
@@ -66,7 +66,7 @@ woodland-atlas/
 
 Fonts: **Familjen Grotesk** (display/body), **IBM Plex Mono** (labels, data, pills) via Google Fonts. Dark canvas; amber is the selection/emphasis colour only. Sentence case in UI copy; mono uppercase micro-labels with letter-spacing for kickers/pills. Respect `prefers-reduced-motion`. Buttons and cards: 1px `--line` borders, 6–12px radii, translucent ink backgrounds with backdrop blur over the map.
 
-Layout: full-bleed map; masthead card top-left (title, source pills, place/client search, hint line) with a collapse control to a compact bar; control stack bottom-left (tilt / satellite / fly-to-sample / clear); legend strip; right-hand panel (~390px) for selection & value, collapsible to a compact header on wide viewports and to a bottom sheet ≤820px; thin mono footer with source attributions and the indicative disclaimer.
+Layout: full-bleed map; grouped overlay chips that expand on demand. Masthead top-left (title, source pills, place/client search, hint line) starts as an `ATLAS` chip. Map tools bottom-left (legend plus view / place / edit controls) start as a `MAP` chip. Right-hand panel (~390px) for selection & value, collapsible to a compact header on wide viewports and to a bottom sheet ≤820px. Thin mono footer with source attributions and the indicative disclaimer.
 
 ---
 
