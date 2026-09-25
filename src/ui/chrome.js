@@ -1,4 +1,4 @@
-/** Collapse / expand the two map overlays (masthead + selection panel). */
+/** Group / ungroup map overlays (atlas, map tools, selection panel). */
 
 import { hideResults } from './search.js';
 
@@ -14,6 +14,15 @@ function syncToggle(btn, collapsed, expandLabel, collapseLabel) {
   btn.textContent = collapsed ? GLYPH_COLLAPSED : GLYPH_EXPANDED;
 }
 
+function bindBarFold(root, sync) {
+  const bar = root?.querySelector('.chrome-bar');
+  bar?.addEventListener('click', (e) => {
+    e.preventDefault();
+    root.classList.toggle('collapsed');
+    sync();
+  });
+}
+
 function syncMasthead() {
   const masthead = $('masthead');
   const body = $('masthead-body');
@@ -21,6 +30,14 @@ function syncMasthead() {
   if (body) body.hidden = !!collapsed;
   syncToggle($('masthead-toggle'), collapsed, 'Expand atlas', 'Collapse atlas');
   if (collapsed) hideResults();
+}
+
+function syncMapTools() {
+  const root = $('map-tools');
+  const body = $('map-tools-body');
+  const collapsed = root?.classList.contains('collapsed');
+  if (body) body.hidden = !!collapsed;
+  syncToggle($('map-tools-toggle'), collapsed, 'Expand map tools', 'Collapse map tools');
 }
 
 function syncPanel() {
@@ -32,15 +49,13 @@ function syncPanel() {
 
 export function initChrome() {
   const masthead = $('masthead');
-  const mastToggle = $('masthead-toggle');
+  const mapTools = $('map-tools');
   const panel = $('panel');
   const panelToggle = $('panel-collapse');
   const panelHead = panel?.querySelector('.panel-head');
 
-  mastToggle?.addEventListener('click', () => {
-    masthead?.classList.toggle('collapsed');
-    syncMasthead();
-  });
+  bindBarFold(masthead, syncMasthead);
+  bindBarFold(mapTools, syncMapTools);
 
   panelToggle?.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -48,7 +63,6 @@ export function initChrome() {
     syncPanel();
   });
 
-  // Collapsed header is a large expand target so the 28px chevron is not the only hit area.
   panelHead?.addEventListener('click', () => {
     if (!panel?.classList.contains('collapsed')) return;
     panel.classList.remove('collapsed');
@@ -56,5 +70,6 @@ export function initChrome() {
   });
 
   syncMasthead();
+  syncMapTools();
   syncPanel();
 }
