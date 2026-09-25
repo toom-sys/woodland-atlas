@@ -21,12 +21,15 @@
 
 <div id="map" aria-label="Woodland map"></div>
 
-<header class="masthead" id="masthead">
+<header class="masthead overlay-fold collapsed" id="masthead">
   <div class="chrome-bar">
-    <div class="kicker">WOODLAND ATLAS · OPEN DATA</div>
-    <button type="button" class="chrome-toggle" id="masthead-toggle" aria-expanded="true" aria-controls="masthead-body" aria-label="Collapse atlas">▾</button>
+    <div class="kicker">
+      <span class="kicker-full">WOODLAND ATLAS · OPEN DATA</span>
+      <span class="kicker-short">ATLAS</span>
+    </div>
+    <button type="button" class="chrome-toggle" id="masthead-toggle" aria-expanded="false" aria-controls="masthead-body" aria-label="Expand atlas">▸</button>
   </div>
-  <div class="masthead-body" id="masthead-body">
+  <div class="masthead-body" id="masthead-body" hidden>
     <h1>Select woodland. <em>See its value.</em></h1>
     <p class="sub">Every parcel below is drawn from free GB public data. Click parcels to build a selection; the model prices it live.</p>
     <div class="pills" id="pills">
@@ -55,35 +58,54 @@
   </div>
 </header>
 
-<div class="map-chrome-bl">
-  <div class="legend" id="legend">
-    <span class="legend-kicker">PUBLIC DATA</span>
-    <span><i style="background:#3E7C4F"></i>ENGLAND · EA</span>
-    <span><i style="background:#5B7C9A"></i>SCOTLAND · PARTIAL</span>
-    <span><i style="background:#3A4A58"></i>SCOTLAND · NO TILE</span>
-    <span><i style="background:#6B5E4E"></i>WALES · BLOCKED</span>
-    <span><i style="background:#4A5340"></i>ESTIMATE ONLY</span>
-    <span><i style="background:var(--amber)"></i>SELECTED</span>
+<div class="map-chrome-bl overlay-fold collapsed" id="map-tools">
+  <div class="chrome-bar">
+    <div class="kicker">MAP</div>
+    <button type="button" class="chrome-toggle" id="map-tools-toggle" aria-expanded="false" aria-controls="map-tools-body" aria-label="Expand map tools">▸</button>
   </div>
-  <div class="controls">
-    <button id="btn-tilt" class="active" aria-pressed="true">◪ TILT · ON</button>
-    <button id="btn-sat" class="active" aria-pressed="true">▦ SATELLITE · ON</button>
-    <button id="btn-colour" class="active" aria-pressed="true">▣ COLOUR · PUBLIC DATA</button>
-    <button id="btn-risk" aria-pressed="false">◈ RISK VIEW · OFF</button>
-    <button id="btn-demo">✦ FLY TO DALBY FOREST</button>
-    <button id="btn-split" aria-pressed="false">✂ SPLIT PARCEL</button>
-    <button id="btn-clear">✕ CLEAR SELECTION</button>
+  <div class="map-tools-body" id="map-tools-body" hidden>
+    <div class="legend" id="legend">
+      <span class="legend-kicker">PUBLIC DATA</span>
+      <span><i style="background:#3E7C4F"></i>ENGLAND · EA</span>
+      <span><i style="background:#5B7C9A"></i>SCOTLAND · PARTIAL</span>
+      <span><i style="background:#3A4A58"></i>SCOTLAND · NO TILE</span>
+      <span><i style="background:#6B5E4E"></i>WALES · BLOCKED</span>
+      <span><i style="background:#4A5340"></i>ESTIMATE ONLY</span>
+      <span><i style="background:var(--amber)"></i>SELECTED</span>
+    </div>
+    <div class="control-group">
+      <div class="control-kicker">VIEW</div>
+      <div class="controls">
+        <button id="btn-tilt" class="active" aria-pressed="true">◪ TILT · ON</button>
+        <button id="btn-sat" class="active" aria-pressed="true">▦ SATELLITE · ON</button>
+        <button id="btn-colour" class="active" aria-pressed="true">▣ COLOUR · PUBLIC DATA</button>
+        <button id="btn-risk" aria-pressed="false">◈ RISK VIEW · OFF</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <div class="control-kicker">PLACE</div>
+      <div class="controls">
+        <button id="btn-demo">✦ FLY TO DALBY FOREST</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <div class="control-kicker">EDIT</div>
+      <div class="controls">
+        <button id="btn-split" aria-pressed="false">✂ SPLIT PARCEL</button>
+        <button id="btn-clear">✕ CLEAR SELECTION</button>
+      </div>
+    </div>
   </div>
 </div>
 
-<aside class="panel" id="panel">
+<aside class="panel collapsed" id="panel">
   <button class="panel-toggle" id="panel-toggle" aria-expanded="false" aria-controls="panel-body">▲ SELECTION &amp; VALUE</button>
   <div class="panel-head">
     <div class="panel-head-text">
       <div class="kicker">SELECTION</div>
       <h2 id="panel-title">No parcels selected</h2>
     </div>
-    <button type="button" class="chrome-toggle" id="panel-collapse" aria-expanded="true" aria-controls="panel-body" aria-label="Collapse selection">▾</button>
+    <button type="button" class="chrome-toggle" id="panel-collapse" aria-expanded="false" aria-controls="panel-body" aria-label="Expand selection">▸</button>
   </div>
   <div class="panel-body" id="panel-body">
     <details class="client-link" id="client-link">
