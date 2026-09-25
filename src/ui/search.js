@@ -133,7 +133,7 @@ function setActive(idx) {
   active?.scrollIntoView({ block: 'nearest' });
 }
 
-function hideResults() {
+export function hideResults() {
   const list = $('search-results');
   if (!list) return;
   list.hidden = true;

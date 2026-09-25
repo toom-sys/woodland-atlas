@@ -1215,16 +1215,22 @@ export function initMap() {
     return null;
   }
 
-  map = new maplibregl.Map({
-    container: 'map',
-    style: buildStyle(),
-    center: START.center,
-    zoom: START.zoom,
-    pitch: 55,
-    bearing: -18,
-    antialias: true,
-    attributionControl: { compact: true }
-  });
+  try {
+    map = new maplibregl.Map({
+      container: 'map',
+      style: buildStyle(),
+      center: START.center,
+      zoom: START.zoom,
+      pitch: 55,
+      bearing: -18,
+      antialias: true,
+      attributionControl: { compact: true }
+    });
+  } catch {
+    setPill('pill-base', 'warn', 'BASEMAP · UNAVAILABLE');
+    loadDemo(state.features);
+    return null;
+  }
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
   map.on('error', () => {
     /* swallow tile errors so a blocked basemap doesn't blank the map */
