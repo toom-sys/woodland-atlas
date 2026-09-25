@@ -21,33 +21,38 @@
 
 <div id="map" aria-label="Woodland map"></div>
 
-<header class="masthead">
-  <div class="kicker">WOODLAND ATLAS · OPEN DATA</div>
-  <h1>Select woodland. <em>See its value.</em></h1>
-  <p class="sub">Every parcel below is drawn from free GB public data. Click parcels to build a selection; the model prices it live.</p>
-  <div class="pills" id="pills">
-    <span class="pill" id="pill-nfi"><i></i>NFI · connecting…</span>
-    <span class="pill" id="pill-lidar"><i></i>LIDAR</span>
-    <span class="pill" id="pill-fsi"><i></i>FSI · MANUAL</span>
-    <span class="pill" id="pill-base"><i></i>BASEMAP</span>
-    <span class="pill" id="pill-mode"><i></i>2.5D</span>
+<header class="masthead" id="masthead">
+  <div class="chrome-bar">
+    <div class="kicker">WOODLAND ATLAS · OPEN DATA</div>
+    <button type="button" class="chrome-toggle" id="masthead-toggle" aria-expanded="true" aria-controls="masthead-body" aria-label="Collapse atlas">▾</button>
   </div>
-  <div class="search" id="search">
-    <label class="search-kicker" for="search-input">SEARCH</label>
-    <input
-      type="search"
-      id="search-input"
-      placeholder="Place, village, or group ref…"
-      autocomplete="off"
-      spellcheck="false"
-      enterkeyhint="search"
-      aria-autocomplete="list"
-      aria-controls="search-results"
-      aria-expanded="false"
-    >
-    <ul class="search-results" id="search-results" role="listbox" hidden></ul>
+  <div class="masthead-body" id="masthead-body">
+    <h1>Select woodland. <em>See its value.</em></h1>
+    <p class="sub">Every parcel below is drawn from free GB public data. Click parcels to build a selection; the model prices it live.</p>
+    <div class="pills" id="pills">
+      <span class="pill" id="pill-nfi"><i></i>NFI · connecting…</span>
+      <span class="pill" id="pill-lidar"><i></i>LIDAR</span>
+      <span class="pill" id="pill-fsi"><i></i>FSI · MANUAL</span>
+      <span class="pill" id="pill-base"><i></i>BASEMAP</span>
+      <span class="pill" id="pill-mode"><i></i>2.5D</span>
+    </div>
+    <div class="search" id="search">
+      <label class="search-kicker" for="search-input">SEARCH</label>
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Place, village, or group ref…"
+        autocomplete="off"
+        spellcheck="false"
+        enterkeyhint="search"
+        aria-autocomplete="list"
+        aria-controls="search-results"
+        aria-expanded="false"
+      >
+      <ul class="search-results" id="search-results" role="listbox" hidden></ul>
+    </div>
+    <div class="hint" id="hint">Colours show which public LiDAR each wood can use — green England, blue Scotland, stone Wales (blocked), dark = estimate only.</div>
   </div>
-  <div class="hint" id="hint">Colours show which public LiDAR each wood can use — green England, blue Scotland, stone Wales (blocked), dark = estimate only.</div>
 </header>
 
 <div class="map-chrome-bl">
@@ -74,8 +79,11 @@
 <aside class="panel" id="panel">
   <button class="panel-toggle" id="panel-toggle" aria-expanded="false" aria-controls="panel-body">▲ SELECTION &amp; VALUE</button>
   <div class="panel-head">
-    <div class="kicker">SELECTION</div>
-    <h2 id="panel-title">No parcels selected</h2>
+    <div class="panel-head-text">
+      <div class="kicker">SELECTION</div>
+      <h2 id="panel-title">No parcels selected</h2>
+    </div>
+    <button type="button" class="chrome-toggle" id="panel-collapse" aria-expanded="true" aria-controls="panel-body" aria-label="Collapse selection">▾</button>
   </div>
   <div class="panel-body" id="panel-body">
     <details class="client-link" id="client-link">
